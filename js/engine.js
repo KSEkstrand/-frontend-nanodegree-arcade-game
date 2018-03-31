@@ -9,7 +9,7 @@
  * drawn but that is not the case. What's really happening is the entire "scene"
  * is being drawn over and over, presenting the illusion of animation.
  *
- * This engine makes the canvas' context (ctx) object globally available to make 
+ * This engine makes the canvas' context (ctx) object globally available to make
  * writing app.js a little simpler to work with.
  */
 
@@ -117,7 +117,7 @@ var Engine = (function(global) {
             numRows = 6,
             numCols = 5,
             row, col;
-        
+
         // Before drawing, clear existing canvas
         ctx.clearRect(0,0,canvas.width,canvas.height)
 
@@ -167,14 +167,18 @@ var Engine = (function(global) {
     /* Go ahead and load all of the images we know we're going to need to
      * draw our game level. Then set init as the callback method, so that when
      * all of these images are properly loaded our game will start.
+
+
+     *KSE note -> moved to app.js for grabbing image props
+     *         -> also why loop the load call?
      */
-    Resources.load([
-        'images/stone-block.png',
-        'images/water-block.png',
-        'images/grass-block.png',
-        'images/enemy-bug.png',
-        'images/char-boy.png'
-    ]);
+    // Resources.load([
+    //     'images/stone-block.png',
+    //     'images/water-block.png',
+    //     'images/grass-block.png',
+    //     'images/enemy-bug.png',
+    //     'images/char-boy.png'
+    // ]);
     Resources.onReady(init);
 
     /* Assign the canvas' context object to the global variable (the window
