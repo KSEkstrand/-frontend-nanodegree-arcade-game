@@ -4,10 +4,10 @@ This game runs in browsers supporting ES6. To load the game, open the index.html
 
 Controls
 --------
-Up arrow key    -> move player up__
-Right arrow key -> move player right__
-Left arrow key  -> move player left__
-Down arrow key  -> move player down__
+Up arrow key    -> move player up  
+Right arrow key -> move player right  
+Left arrow key  -> move player left  
+Down arrow key  -> move player down  
 
 Demo Site
 --------
