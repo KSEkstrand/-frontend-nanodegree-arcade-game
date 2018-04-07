@@ -1,10 +1,11 @@
-const colSize = 101;
-const colCenter = colSize/2-25; //center w/ offset for better looking placement
-const rowSize = 83;
-const rowCenter = rowSize/2+5; //center w/ offset for better looking placement
-const colCount = 5;
-const rowCount = 6;
-const allowedKeys = {
+const COLSIZE = 101;
+const COLCENTER = COLSIZE/2-25; //center w/ offset for better looking placement
+const ROWSIZE = 83;
+const ROWCENTER = ROWSIZE/2+5; //center w/ offset for better looking placement
+const COLCOUNT = 5;
+const ROWCOUNT = 6;
+
+const ALLOWEDKEYS = {
     37: 'left',
     38: 'up',
     39: 'right',
@@ -28,14 +29,17 @@ allEnemies = [];
 //1 - has screen location
 //2 - can be touched (i.e. has boundaries)
 //3 - has image
-var GameObject = function(x, y, sprite) {
+var GameObject = function(x, y, sprite, collisionOffset) {
   this.x = x;
   this.y = y;
   this.sprite = sprite;
   this.width = Resources.get(this.sprite).width;
   this.height = 83; //not using resource height because images are too large for cells
+  this.collisionOffset = collisionOffset;
 };
 
+// Currently unused, but fallback method for inheriting classes
+// Can be used later for alternative updates
 GameObject.prototype.update = function(dt){
 
 };
@@ -45,8 +49,8 @@ GameObject.prototype.render = function(){
 };
 
 //define character object for deviation from non-moving game objects later
-var CharacterObject = function(x, y, sprite) {
-  GameObject.call(this, x, y, sprite);
+var CharacterObject = function(x, y, sprite, collisionOffset) {
+  GameObject.call(this, x, y, sprite, collisionOffset);
 };
 CharacterObject.prototype = Object.create(GameObject.prototype);
 CharacterObject.prototype.constructor = CharacterObject;
@@ -61,77 +65,42 @@ CharacterObject.prototype.constructor = CharacterObject;
 // a handleInput() method.
 
 //player object
-var Player = function(x, y, sprite){
+var Player = function(x, y, sprite, collisionOffset){
   //ignore sprite currently, just use standard image obj
   //CharacterObject.call(this, x, y, sprite);
-  CharacterObject.call(this, x, y, 'images/char-boy.png');
+  CharacterObject.call(this, x, y, 'images/char-boy.png', 25);
 };
 
 Player.prototype = Object.create(CharacterObject.prototype);
 Player.prototype.constructor = Player;
 
-//function to check boundary of the player object
-//this function only applies to the player, as we don't care if
-//other objects touch
+//BROKEN - detection when moved to player.checkboundary
+Player.prototype.checkBoundary = function(gameObject){
+  return checkGameObjectBoundary(this, gameObject);
+};
 
-const playerCollisionXOffset = 25; //offset for size of player image
-checkBoundary = function(player, gameObject){
+//Base gameboundary checking
+//Takes 2 game objects and returns boolean indicating collision between
+//Can be extended to be invoked by all checkBoundary Functions
+var checkGameObjectBoundary = function(gameObject1, gameObject2){
   var boundaryTouched = false;
-  var playerBoundaryXLeft = (player.x - (player.width-playerCollisionXOffset)/2);
-  var playerBoundaryYBottom = player.y - player.height/2;
-  var playerBoundaryXRight = (player.x + (player.width-playerCollisionXOffset)/2);
-  var playerBoundaryYTop = player.y + player.height/2;
+  var gameObject1XLeft = (gameObject1.x - (gameObject1.width-gameObject1.collisionOffset)/2);
+  var gameObject1YBottom = gameObject1.y - gameObject1.height/2;
+  var gameObject1XRight = (gameObject1.x + (gameObject1.width-gameObject1.collisionOffset)/2);
+  var gameObject1YTop = gameObject1.y + gameObject1.height/2;
 
-  var gameObjectBoundaryXLeft = (gameObject.x - (gameObject.width-playerCollisionXOffset)/2);
-  var gameObjectBoundaryYBottom = gameObject.y - gameObject.height/2;
-  var gameObjectBoundaryXRight = (gameObject.x + (gameObject.width-playerCollisionXOffset)/2);
-  var gameObjectBoundaryYTop = gameObject.y + gameObject.height/2;
+  var gameObject2BoundaryXLeft = (gameObject2.x - (gameObject2.width-gameObject2.collisionOffset)/2);
+  var gameObject2BoundaryYBottom = gameObject2.y - gameObject2.height/2;
+  var gameObject2BoundaryXRight = (gameObject2.x + (gameObject2.width-gameObject2.collisionOffset)/2);
+  var gameObject2BoundaryYTop = gameObject2.y + gameObject2.height/2;
 
-  var xTouch = (playerBoundaryXLeft < gameObjectBoundaryXRight) && (playerBoundaryXRight > gameObjectBoundaryXLeft);
-  var yTouch = (playerBoundaryYBottom < gameObjectBoundaryYTop) && (playerBoundaryYTop > gameObjectBoundaryYBottom);
+  var xTouch = (gameObject1XLeft < gameObject2BoundaryXRight) && (gameObject1XRight > gameObject2BoundaryXLeft);
+  var yTouch = (gameObject1YBottom < gameObject2BoundaryYTop) && (gameObject1YTop > gameObject2BoundaryYBottom);
 
   if(xTouch && yTouch) {
     boundaryTouched = true;
   }
   return boundaryTouched;
-};
-
-var performMove = function(player, key){
-  var playerBoundaryXLeft = this.x - this.width/2;
-  var playerBoundaryYBottom = this.y - this.height/2;
-  var playerBoundaryXRight = this.x + this.width/2;
-  var playerBoundaryYTop = this.y + this.height/2;
-
-  if(key === "left")  {
-    if(-1 < player.x-colSize){
-      player.x = player.x-colSize;
-    }
-  }
-  if(key === "right")  {
-    if(colSize*colCount > player.x+colSize+colCenter){
-      player.x = player.x+colSize;
-    }
-  }
-  if(key === "down") {
-    if(rowSize*(rowCount-2)-rowCenter > player.y-rowSize){
-      player.y = player.y+rowSize;
-    }
-  }
-  if(key === "up" )  {
-    if(rowSize-rowCenter < player.y){
-      player.y = player.y-rowSize;
-    }
-    else{
-      console.log("Win");
-      appInit();
-    }
-  }
-  allEnemies.forEach(function(enemy){
-    if(checkBoundary(player,enemy)){
-      console.log("Lose");
-      appInit();
-    }
-  });
 };
 
 Player.prototype.handleInput = function(key){
@@ -140,13 +109,47 @@ Player.prototype.handleInput = function(key){
     console.log("Key not allowed!");
     return;
   }
-  performMove(this,key);
+
+  if(key === "left")  {
+    if(-1 < this.x-COLSIZE){
+      this.x = this.x-COLSIZE;
+    }
+  }
+  if(key === "right")  {
+    if(COLSIZE*COLCOUNT > this.x+COLSIZE+COLCENTER){
+      this.x = this.x+COLSIZE;
+    }
+  }
+  if(key === "down") {
+    if(ROWSIZE*(ROWCOUNT-2)-ROWCENTER > this.y-ROWSIZE){
+      this.y = this.y+ROWSIZE;
+    }
+  }
+  if(key === "up" )  {
+    if(ROWSIZE-ROWCENTER < this.y){
+      this.y = this.y-ROWSIZE;
+    }
+    else{
+      console.log("Win");
+      appInit();
+    }
+  }
+  let playerCheck = this;
+
+  //evaluate check for collision on move, not only on frame update
+  //can be used to check for treasure touch
+  allEnemies.forEach(function(enemy){
+    if(playerCheck.checkBoundary(enemy)){
+      console.log("Lose");
+      appInit();
+    }
+  });
   return;
 };
 
 // Enemies our player must avoid
-var Enemy = function(x, y){
-  CharacterObject.call(this, x, y, 'images/enemy-bug.png');
+var Enemy = function(x, y, collisionOffset){
+  CharacterObject.call(this, x, y, 'images/enemy-bug.png', collisionOffset);
   this.speed = generateRandomEnemySpeedOffset();
 };
 
@@ -159,46 +162,40 @@ Enemy.prototype.constructor = Enemy;
 // Update the enemy's position, required method for game
 // Parameter: dt, a time delta between ticks
 Enemy.prototype.update = function(dt) {
-  var newX = updateEnemyX(dt, this);
-  var index = allEnemies.indexOf(this);
-  if(allEnemies[index]){
-    allEnemies[index].x = newX;
-    if(checkBoundary(player,this)){
-      console.log("Lose");
-      appInit();
-    }
-    if(allEnemies[index].x > colSize*colCount + colSize){
-      allEnemies[index].x = -colSize;
-    }
-  }
-};
+  this.x = (dt * 10 * this.speed) + this.x;
 
-var updateEnemyX = function(dt, enemy){
-  return (dt * 10 * enemy.speed) + enemy.x;
+  if(player.checkBoundary(this)){
+    console.log("Lose");
+    appInit();
+  }
+  if(this.x > COLSIZE*COLCOUNT + COLSIZE){
+    this.x = -COLSIZE;
+  }
 };
 
 //static quantity of enemies currently - maybe add text field later
 var buildEnemyArray = function(enemyCount){
   allEnemies = [];
   for (var i = 0; i < enemyCount; i++){
-    for(var j = rowCount/2; j < rowCount; j++){
-      allEnemies.push(new Enemy(-colSize, (j-2)*rowSize-rowCenter));
+    for(var j = ROWCOUNT/2; j < ROWCOUNT; j++){
+      allEnemies.push(new Enemy(-COLSIZE, (j-2)*ROWSIZE-ROWCENTER, 25));
     }
   }
 };
 
 var buildPlayer = function(){
-  player = new Player(2*colSize, 5*rowSize-rowCenter, null);
+  //Not handling building out custom sizes or custom images yet. Maybe later.
+  player = new Player(2*COLSIZE, 5*ROWSIZE-ROWCENTER, null, null);
 };
 
 // This listens for key presses and sends the keys to your
 // Player.handleInput() method. You don't need to modify this.
 document.addEventListener('keyup', function(e) {
-    player.handleInput(allowedKeys[e.keyCode]);
+    player.handleInput(ALLOWEDKEYS[e.keyCode]);
 });
 
 function appInit(){
-  //1 enemies per row currently
+  //call build enemies to build x enemies
   buildEnemyArray(2);
 
   //ToDo add custom player image
